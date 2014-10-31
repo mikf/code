@@ -1,0 +1,65 @@
+#!/bin/bash
+
+NOTIFY="console"
+DELETE=""
+SHRED_OPTIONS=""
+FILES=()
+
+while [ -n "${1}" ]; do
+  case "${1}" in
+
+    "--zenity" )
+      NOTIFY="zenity"
+    ;;
+
+    "-q" | "--quiet" )
+      NOTIFY=""
+    ;;
+
+    "-u" | "--remove" )
+      SHRED_OPTIONS="${SHRED_OPTIONS} ${1}"
+      DELETE="true"
+    ;;
+
+    "-n" | "-s" )
+      SHRED_OPTIONS="${SHRED_OPTIONS} ${1} ${2}"
+      shift
+    ;;
+
+    "--")
+        shift
+        while [[ -n "${1}" ]]; do
+            [[ -e "${1}" ]] && FILES=( "${FILES[@]}" "${1}" )
+            shift
+        done
+        break
+    ;;
+
+    -* )
+      SHRED_OPTIONS="${SHRED_OPTIONS} ${1}"
+    ;;
+
+    * )
+      #FILES[${#FILES[*]}]="${1}"
+      if [ -e "${1}" ]; then
+        FILES=( "${FILES[@]}" "${1}" )
+      fi
+    ;;
+
+  esac
+
+  shift
+
+done
+
+for F in "${FILES[@]}"; do
+    [[ -e "${F}" ]] || continue
+    if [ -d "${F}" ]; then
+        find "${F}" -type f -exec shred ${SHRED_OPTIONS} {} +
+        [[ "${DELETE}" = "true" ]] && rm -r "${F}"
+    else
+        shred ${SHRED_OPTIONS} "${F}"
+    fi
+done
+
+exit 0
